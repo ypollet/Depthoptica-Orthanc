@@ -217,7 +217,7 @@ extension = """
       GetResource('/series/' + seriesId, function(series) {
         GetResource('/instances/' + series['Instances'][0] + '/tags?simplify', function(instance) {
 
-          if (instance['SOPClassUID'] == DEPTHOPTICA_PLUGIN_SOP_CLASS_UID) {
+          if (instance['SOPClassUID'] == DEPTHOPTICA_PLUGIN_SOP_CLASS_UID && instance.contains('SliceThickness')) {
             $('#depthoptica-button').remove();
 
             var b = $('<a>')
