@@ -38,7 +38,7 @@ import json
 import requests
 import os
 
-path_to_project = "data/insect"
+path_to_project = "frontend/data/insect"
 SOURCE = f"{path_to_project}/*.jpg"
 calib_file = f"{path_to_project}/depth.json"
 images = sorted(glob.glob(SOURCE))
@@ -47,6 +47,8 @@ i = 0
 
 with open(calib_file, "rb") as f:
     depth_dict = json.load(f)
+
+
 
 images = sorted(depth_dict["stacked"].keys())
 study_uid = pydicom.uid.generate_uid()
@@ -60,7 +62,7 @@ images = depth_dict["stacked"]
 
 now = datetime.datetime.now()
 
-for image_name in images:
+for image_name in depth_dict["stacked"]:
     image = f"{path_to_project}/{image_name}"
     image_data = images[image_name]["data"]
 
@@ -110,16 +112,16 @@ for image_name in images:
         im.save(thumbnail_buffer, format="JPEG")
 
     with PIL.Image.open(
-        f"{path_to_project}/{depth_dict['stacked'][image_name]['layers']}"
+        f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']}"
     ) as im:
-        layers_buffer = BytesIO()
-        im.save(layers_buffer, format="JPEG")
+        edges_buffer = BytesIO()
+        im.save(edges_buffer, format="png")
 
     with PIL.Image.open(
         f"{path_to_project}/{depth_dict['stacked'][image_name]['depthmap']}"
     ) as im:
         depthmap_buffer = BytesIO()
-        im.save(depthmap_buffer, format="JPEG")
+        im.save(depthmap_buffer, format="png")
 
     ds.PlanarConfiguration = 0
     ds.SamplesPerPixel = 3
@@ -130,7 +132,6 @@ for image_name in images:
     ds.PhotometricInterpretation = "YBR_FULL_422"
 
     ds.PixelSpacing = image_data["PixelRatio"]
-    ds.NumberOfFrames = (image_data["Zmax"] - image_data["Zmin"]) / image_data["step"]
     ds.SliceThickness = image_data["Zmax"] - image_data["Zmin"]
 
     ds["PixelData"].VR = "OB"  # always for encapsulated pixel data
@@ -150,15 +151,18 @@ for image_name in images:
 
     uuid = response.json()["ID"]
     series_uuid = response.json()["ParentSeries"]
-
+    r = requests.put(
+        f"http://localhost:8042/instances/{uuid}/metadata/edges_threshold",
+        data=thumbnail_buffer.getvalue(),
+    )
     r = requests.put(
         f"http://localhost:8042/instances/{uuid}/attachments/thumbnail",
         data=thumbnail_buffer.getvalue(),
     )
 
     r = requests.put(
-        f"http://localhost:8042/instances/{uuid}/attachments/layers",
-        data=layers_buffer.getvalue(),
+        f"http://localhost:8042/instances/{uuid}/attachments/edges_threshold",
+        data=edges_buffer.getvalue(),
     )
 
     r = requests.put(
