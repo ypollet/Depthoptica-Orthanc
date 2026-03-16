@@ -38,7 +38,7 @@ import json
 import requests
 import os
 
-path_to_project = "frontend/data/insect"
+path_to_project = "data/insect"
 SOURCE = f"{path_to_project}/*.jpg"
 calib_file = f"{path_to_project}/depth.json"
 images = sorted(glob.glob(SOURCE))
@@ -47,8 +47,6 @@ i = 0
 
 with open(calib_file, "rb") as f:
     depth_dict = json.load(f)
-
-
 
 images = sorted(depth_dict["stacked"].keys())
 study_uid = pydicom.uid.generate_uid()
@@ -112,7 +110,7 @@ for image_name in depth_dict["stacked"]:
         im.save(thumbnail_buffer, format="JPEG")
 
     with PIL.Image.open(
-        f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']}"
+        f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']["image"]}"
     ) as im:
         edges_buffer = BytesIO()
         im.save(edges_buffer, format="png")
@@ -151,23 +149,30 @@ for image_name in depth_dict["stacked"]:
 
     uuid = response.json()["ID"]
     series_uuid = response.json()["ParentSeries"]
+
+    edges = depth_dict['stacked'][image_name]["edges"]["threshold"]
     r = requests.put(
-        f"http://localhost:8042/instances/{uuid}/metadata/edges_threshold",
-        data=thumbnail_buffer.getvalue(),
+        f"http://localhost:8042/instances/{uuid}/metadata/edges_thresholds",
+        data=json.dumps(edges),
     )
+
+    r.raise_for_status()
+
+
     r = requests.put(
         f"http://localhost:8042/instances/{uuid}/attachments/thumbnail",
         data=thumbnail_buffer.getvalue(),
     )
-
+    r.raise_for_status()
     r = requests.put(
-        f"http://localhost:8042/instances/{uuid}/attachments/edges_threshold",
+        f"http://localhost:8042/instances/{uuid}/attachments/edges",
         data=edges_buffer.getvalue(),
     )
-
+    r.raise_for_status()
     r = requests.put(
-        f"http://localhost:8042/instances/{uuid}/attachments/depthmap",
+        f"http://localhost:8042/instances/{uuid}/attachments/heightmap",
         data=depthmap_buffer.getvalue(),
     )
+    r.raise_for_status()
 
     i += 1
