@@ -38,7 +38,7 @@ import json
 import requests
 import os
 
-path_to_project = "data/insect"
+path_to_project = "data/georges"
 SOURCE = f"{path_to_project}/*.jpg"
 calib_file = f"{path_to_project}/depth.json"
 images = sorted(glob.glob(SOURCE))
@@ -108,12 +108,7 @@ for image_name in depth_dict["stacked"]:
         im.thumbnail((thumbnails_width, thumbnails_height))
         thumbnail_buffer = BytesIO()
         im.save(thumbnail_buffer, format="JPEG")
-
-    with PIL.Image.open(
-        f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']["image"]}"
-    ) as im:
-        edges_buffer = BytesIO()
-        im.save(edges_buffer, format="png")
+    
 
     with PIL.Image.open(
         f"{path_to_project}/{depth_dict['stacked'][image_name]['depthmap']}"
@@ -150,25 +145,43 @@ for image_name in depth_dict["stacked"]:
     uuid = response.json()["ID"]
     series_uuid = response.json()["ParentSeries"]
 
-    edges = depth_dict['stacked'][image_name]["edges"]["threshold"]
-    r = requests.put(
-        f"http://localhost:8042/instances/{uuid}/metadata/edges_thresholds",
-        data=json.dumps(edges),
-    )
+    if 'edges' in depth_dict['stacked'][image_name] :
+        with PIL.Image.open(
+            f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']["image"]}"
+        ) as im:
+            edges_buffer = BytesIO()
+            im.save(edges_buffer, format="png")
+        
+            edges = depth_dict['stacked'][image_name]["edges"]["threshold"]
+            r = requests.put(
+                f"http://localhost:8042/instances/{uuid}/metadata/edges_thresholds",
+                data=json.dumps(edges),
+            )
 
-    r.raise_for_status()
+            r = requests.put(
+            f"http://localhost:8042/instances/{uuid}/attachments/edges",
+                data=edges_buffer.getvalue(),
+            )
+            r.raise_for_status()
 
+    if 'mask' in depth_dict['stacked'][image_name]:
+        with PIL.Image.open(
+            f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']["image"]}"
+        ) as im:
+            mask_buffer = BytesIO()
+            im.save(mask_buffer, format="png")
+            r = requests.put(
+                f"http://localhost:8042/instances/{uuid}/attachments/mask",
+                data=mask_buffer.getvalue(),
+            )
+            r.raise_for_status()
 
     r = requests.put(
         f"http://localhost:8042/instances/{uuid}/attachments/thumbnail",
         data=thumbnail_buffer.getvalue(),
     )
     r.raise_for_status()
-    r = requests.put(
-        f"http://localhost:8042/instances/{uuid}/attachments/edges",
-        data=edges_buffer.getvalue(),
-    )
-    r.raise_for_status()
+    
     r = requests.put(
         f"http://localhost:8042/instances/{uuid}/attachments/heightmap",
         data=depthmap_buffer.getvalue(),
