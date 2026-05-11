@@ -55,8 +55,11 @@ def get_response_edges(instance) -> bytearray:
     return orthanc.RestApiGet(f"/instances/{instance}/attachments/edges/data")
 
 
-def get_response_depthmap(instance) -> bytearray:
-    return orthanc.RestApiGet(f"/instances/{instance}/attachments/depthmap/data")
+def get_response_heightmap(instance) -> bytearray:
+    return orthanc.RestApiGet(f"/instances/{instance}/attachments/heightmap/data")
+
+def get_response_mask(instance) -> bytearray:
+    return orthanc.RestApiGet(f"/instances/{instance}/attachments/mask/data")
 
 
 # send single image
@@ -151,12 +154,13 @@ def compute_landmark(output, uri, **request):
             orthanc.RestApiGet(f"/instances/{instanceId}/simplified-tags")
         )
 
-        height_bytes = orthanc.RestApiGet(f"/instances/{instanceId}/attachments/depthmap/data")
+        height_bytes = orthanc.RestApiGet(f"/instances/{instanceId}/attachments/heightmap/data")
         im = cv2.imdecode(height_bytes, cv2.IMREAD_GRAYSCALE | cv2.IMREAD_ANYDEPTH)
 
         pixel_spacing = [float(x) for x in tags["PixelSpacing"].split("\\")]
         thickness = float(tags["SliceThickness"])
         depth = im[round(y)][round(x)]
+        print(depth)
         position = {
                 "x": x * pixel_spacing[0],
                 "y": y * pixel_spacing[1],

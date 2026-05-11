@@ -65,9 +65,9 @@ for image_name in depth_dict["stacked"]:
     image_data = images[image_name]["data"]
 
     ds = pydicom.dataset.Dataset()
-    ds.PatientName = "Geonemus^goeffroyi^focus"
-    ds.PatientID = "Geonemus12457454"
-    ds.PatientBirthDate = "20200914"
+    ds.PatientName = "Georges^waterloo"
+    ds.PatientID = "Georges12457454"
+    ds.PatientBirthDate = "18150618"
     ds.PatientSex = "O"
 
     ds.StudyDate = now.strftime("%Y%m%d")
@@ -166,7 +166,7 @@ for image_name in depth_dict["stacked"]:
 
     if 'mask' in depth_dict['stacked'][image_name]:
         with PIL.Image.open(
-            f"{path_to_project}/{depth_dict['stacked'][image_name]['edges']["image"]}"
+            f"{path_to_project}/{depth_dict['stacked'][image_name]['mask']}"
         ) as im:
             mask_buffer = BytesIO()
             im.save(mask_buffer, format="png")
