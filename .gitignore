@@ -2,3 +2,4 @@
 .env.local
 .depth-orthanc/
 /data
+*.local
